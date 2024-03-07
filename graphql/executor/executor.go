@@ -110,6 +110,7 @@ func (e *Executor) DispatchOperation(
 
 		tmpResponseContext := graphql.WithResponseContext(ctx, e.errorPresenter, e.recoverFunc)
 		responses := e.es.Exec(tmpResponseContext)
+
 		if errs := graphql.GetErrors(tmpResponseContext); errs != nil {
 			return graphql.OneShot(&graphql.Response{Errors: errs})
 		}

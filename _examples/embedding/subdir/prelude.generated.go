@@ -88,6 +88,7 @@ func (ec *executionContext) ___Directive_name(ctx context.Context, field graphql
 	if err != nil {
 		return graphql.Null
 	}
+	
 	ctx = graphql.WithFieldContext(ctx, fc)
 	defer func() {
 		if r := recover(); r != nil {

@@ -66,6 +66,13 @@ func (ec *executionContext) _{{$object.Name}}_{{$field.Name}}(ctx context.Contex
 			}
 		{{- else }}
 			res := resTmp.({{$field.TypeReference.GO | ref}})
+			validator, ok := resTmp.(graphql.TypeValidator)
+			if ok {
+				if !validator.IsValid() {
+					ec.Error(ctx, fmt.Errorf("%s is not a valid enum", res))
+					return graphql.Null
+				}
+			}
 			fc.Result = res
 			return ec.{{ $field.TypeReference.MarshalFunc }}(ctx, field.Selections, res)
 		{{- end }}
