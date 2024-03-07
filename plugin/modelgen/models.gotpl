@@ -102,7 +102,7 @@
 	}
 
 	func (e {{ goModelName .Name }}) MarshalGQL(w io.Writer) {
-		fmt.Fprint(w, strconv.Quote(string(e)))
+		fmt.Fprint(w, strconv.Quote(e.String()))
 	}
 
 	func  ToLower{{ goModelName .Name }}(e string) {{ goModelName .Name }} {
