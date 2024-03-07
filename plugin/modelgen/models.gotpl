@@ -6,6 +6,8 @@
 {{ reserveImport "sync"  }}
 {{ reserveImport "errors"  }}
 {{ reserveImport "bytes"  }}
+{{ reserveImport "log"  }}
+{{ reserveImport "strings"  }}
 
 {{ reserveImport "github.com/vektah/gqlparser/v2" }}
 {{ reserveImport "github.com/vektah/gqlparser/v2/ast" }}
@@ -84,6 +86,8 @@
 		return string(e)
 	}
 
+	
+
 	func (e *{{ goModelName .Name }}) UnmarshalGQL(v interface{}) error {
 		str, ok := v.(string)
 		if !ok {
@@ -98,7 +102,16 @@
 	}
 
 	func (e {{ goModelName .Name }}) MarshalGQL(w io.Writer) {
-		fmt.Fprint(w, strconv.Quote(e.String()))
+		fmt.Fprint(w, strconv.Quote(string(e)))
 	}
+
+	func  ToLower{{ goModelName .Name }}(e string) {{ goModelName .Name }} {
+		return {{ goModelName .Name }}(strings.ToLower(e))
+	}
+
+	func  ToUpper{{ goModelName .Name }}(e string) {{ goModelName .Name }} {
+		return {{ goModelName .Name }}(strings.ToUpper(e))
+	}
+
 
 {{- end }}
