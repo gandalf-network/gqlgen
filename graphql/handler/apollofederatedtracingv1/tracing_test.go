@@ -49,11 +49,11 @@ func TestApolloTracing(t *testing.T) {
 
 	tracing := respData.Extensions.FTV1
 	pbuf, err := base64.StdEncoding.DecodeString(tracing)
-	require.Nil(t, err)
+	require.NoError(t, err)
 
 	ftv1 := &generated.Trace{}
 	err = proto.Unmarshal(pbuf, ftv1)
-	require.Nil(t, err)
+	require.NoError(t, err)
 
 	require.NotZero(t, ftv1.StartTime.Nanos)
 	require.Less(t, ftv1.StartTime.Nanos, ftv1.EndTime.Nanos)
@@ -82,11 +82,11 @@ func TestApolloTracing_Concurrent(t *testing.T) {
 
 			tracing := respData.Extensions.FTV1
 			pbuf, err := base64.StdEncoding.DecodeString(tracing)
-			require.Nil(t, err)
+			require.NoError(t, err)
 
 			ftv1 := &generated.Trace{}
 			err = proto.Unmarshal(pbuf, ftv1)
-			require.Nil(t, err)
+			require.NoError(t, err)
 			require.NotZero(t, ftv1.StartTime.Nanos)
 		}()
 	}
@@ -141,12 +141,14 @@ func TestApolloTracing_withUnexpectedEOF(t *testing.T) {
 	resp := doRequestWithReader(h, http.MethodPost, "/graphql", &alwaysError{})
 	assert.Equal(t, http.StatusOK, resp.Code)
 }
+
 func doRequest(handler http.Handler, method, target, body string) *httptest.ResponseRecorder {
 	return doRequestWithReader(handler, method, target, strings.NewReader(body))
 }
 
 func doRequestWithReader(handler http.Handler, method string, target string,
-	reader io.Reader) *httptest.ResponseRecorder {
+	reader io.Reader,
+) *httptest.ResponseRecorder {
 	r := httptest.NewRequest(method, target, reader)
 	r.Header.Set("Content-Type", "application/json")
 	r.Header.Set("apollo-federation-include-trace", "ftv1")

@@ -308,7 +308,7 @@ func Test_wordWalker(t *testing.T) {
 
 	for i, at := range theTests {
 		t.Run(fmt.Sprintf("wordWalker-%d", i), func(t *testing.T) {
-			require.Equal(t, at.input, at.expected)
+			require.Equal(t, at.expected, at.input)
 		})
 	}
 }
@@ -333,7 +333,6 @@ func TestTemplateOverride(t *testing.T) {
 }
 
 func TestRenderFS(t *testing.T) {
-
 	tempDir := t.TempDir()
 
 	outDir := filepath.Join(tempDir, "output")

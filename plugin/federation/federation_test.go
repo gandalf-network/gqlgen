@@ -80,8 +80,8 @@ func TestWithEntities(t *testing.T) {
 	require.Equal(t, "String", f.Entities[5].Resolvers[0].KeyFields[4].Definition.Type.Name())
 
 	require.Len(t, f.Entities[5].Requires, 2)
-	require.Equal(t, f.Entities[5].Requires[0].Name, "id")
-	require.Equal(t, f.Entities[5].Requires[1].Name, "helloSecondary")
+	require.Equal(t, "id", f.Entities[5].Requires[0].Name)
+	require.Equal(t, "helloSecondary", f.Entities[5].Requires[1].Name)
 
 	require.Equal(t, "World", f.Entities[6].Name)
 	require.Len(t, f.Entities[6].Resolvers, 2)
@@ -171,7 +171,6 @@ func TestCodeGenerationFederation2(t *testing.T) {
 // This test is to ensure that the input arguments are not
 // changed when cfg.OmitSliceElementPointers is false OR true
 func TestMultiWithOmitSliceElemPointersCfg(t *testing.T) {
-
 	staticRepsString := "reps: [HelloByNamesInput]!"
 	t.Run("OmitSliceElementPointers true", func(t *testing.T) {
 		f, cfg := load(t, "testdata/multi/multi.yml")
@@ -231,7 +230,6 @@ func TestHandlesArgumentGeneration(t *testing.T) {
 	raw := "foo bar baz(limit:4)"
 	requiresFieldSet := fieldset.New(raw, nil)
 	for _, field := range requiresFieldSet {
-
 		e.Requires = append(e.Requires, &Requires{
 			Name:  field.ToGoPrivate(),
 			Field: field,

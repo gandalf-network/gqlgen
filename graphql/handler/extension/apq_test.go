@@ -51,8 +51,8 @@ func TestAPQ(t *testing.T) {
 	t.Run("with hash miss and no query", func(t *testing.T) {
 		ctx := newOC()
 		params := &graphql.RawParams{
-			Extensions: map[string]interface{}{
-				"persistedQuery": map[string]interface{}{
+			Extensions: map[string]any{
+				"persistedQuery": map[string]any{
 					"sha256Hash": hash,
 					"version":    1,
 				},
@@ -60,15 +60,15 @@ func TestAPQ(t *testing.T) {
 		}
 
 		err := extension.AutomaticPersistedQuery{graphql.MapCache{}}.MutateOperationParameters(ctx, params)
-		require.Equal(t, err.Message, "PersistedQueryNotFound")
+		require.Equal(t, "PersistedQueryNotFound", err.Message)
 	})
 
 	t.Run("with hash miss and query", func(t *testing.T) {
 		ctx := newOC()
 		params := &graphql.RawParams{
 			Query: query,
-			Extensions: map[string]interface{}{
-				"persistedQuery": map[string]interface{}{
+			Extensions: map[string]any{
+				"persistedQuery": map[string]any{
 					"sha256Hash": hash,
 					"version":    1,
 				},
@@ -86,8 +86,8 @@ func TestAPQ(t *testing.T) {
 		ctx := newOC()
 		params := &graphql.RawParams{
 			Query: query,
-			Extensions: map[string]interface{}{
-				"persistedQuery": map[string]interface{}{
+			Extensions: map[string]any{
+				"persistedQuery": map[string]any{
 					"sha256Hash": hash,
 					"version":    1,
 				},
@@ -104,8 +104,8 @@ func TestAPQ(t *testing.T) {
 	t.Run("with hash hit and no query", func(t *testing.T) {
 		ctx := newOC()
 		params := &graphql.RawParams{
-			Extensions: map[string]interface{}{
-				"persistedQuery": map[string]interface{}{
+			Extensions: map[string]any{
+				"persistedQuery": map[string]any{
 					"sha256Hash": hash,
 					"version":    1,
 				},
@@ -123,34 +123,34 @@ func TestAPQ(t *testing.T) {
 	t.Run("with malformed extension payload", func(t *testing.T) {
 		ctx := newOC()
 		params := &graphql.RawParams{
-			Extensions: map[string]interface{}{
+			Extensions: map[string]any{
 				"persistedQuery": "asdf",
 			},
 		}
 
 		err := extension.AutomaticPersistedQuery{graphql.MapCache{}}.MutateOperationParameters(ctx, params)
-		require.Equal(t, err.Message, "invalid APQ extension data")
+		require.Equal(t, "invalid APQ extension data", err.Message)
 	})
 
 	t.Run("with invalid extension version", func(t *testing.T) {
 		ctx := newOC()
 		params := &graphql.RawParams{
-			Extensions: map[string]interface{}{
-				"persistedQuery": map[string]interface{}{
+			Extensions: map[string]any{
+				"persistedQuery": map[string]any{
 					"version": 2,
 				},
 			},
 		}
 		err := extension.AutomaticPersistedQuery{graphql.MapCache{}}.MutateOperationParameters(ctx, params)
-		require.Equal(t, err.Message, "unsupported APQ version")
+		require.Equal(t, "unsupported APQ version", err.Message)
 	})
 
 	t.Run("with hash mismatch", func(t *testing.T) {
 		ctx := newOC()
 		params := &graphql.RawParams{
 			Query: query,
-			Extensions: map[string]interface{}{
-				"persistedQuery": map[string]interface{}{
+			Extensions: map[string]any{
+				"persistedQuery": map[string]any{
 					"sha256Hash": "badhash",
 					"version":    1,
 				},
@@ -158,7 +158,7 @@ func TestAPQ(t *testing.T) {
 		}
 
 		err := extension.AutomaticPersistedQuery{graphql.MapCache{}}.MutateOperationParameters(ctx, params)
-		require.Equal(t, err.Message, "provided APQ hash does not match query")
+		require.Equal(t, "provided APQ hash does not match query", err.Message)
 	})
 }
 

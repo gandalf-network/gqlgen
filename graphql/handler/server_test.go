@@ -81,11 +81,11 @@ func TestServer(t *testing.T) {
 
 	t.Run("invokes field middleware in order", func(t *testing.T) {
 		var calls []string
-		srv.AroundFields(func(ctx context.Context, next graphql.Resolver) (res interface{}, err error) {
+		srv.AroundFields(func(ctx context.Context, next graphql.Resolver) (res any, err error) {
 			calls = append(calls, "first")
 			return next(ctx)
 		})
-		srv.AroundFields(func(ctx context.Context, next graphql.Resolver) (res interface{}, err error) {
+		srv.AroundFields(func(ctx context.Context, next graphql.Resolver) (res any, err error) {
 			calls = append(calls, "second")
 			return next(ctx)
 		})
@@ -129,7 +129,7 @@ func TestServer(t *testing.T) {
 
 		t.Run("cache hits use document from cache", func(t *testing.T) {
 			doc, err := parser.ParseQuery(&ast.Source{Input: `query Bar {name}`})
-			require.Nil(t, err)
+			require.NoError(t, err)
 			cache.Add(ctx, qry, doc)
 
 			resp := get(srv, "/foo?query="+url.QueryEscape(qry))

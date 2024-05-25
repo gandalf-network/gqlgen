@@ -275,11 +275,19 @@ func (c *Config) injectTypesFromSchema() error {
 		SkipRuntime: true,
 	}
 
+	c.Directives["goExtraField"] = DirectiveConfig{
+		SkipRuntime: true,
+	}
+
 	c.Directives["goField"] = DirectiveConfig{
 		SkipRuntime: true,
 	}
 
 	c.Directives["goTag"] = DirectiveConfig{
+		SkipRuntime: true,
+	}
+
+	c.Directives["goEnum"] = DirectiveConfig{
 		SkipRuntime: true,
 	}
 
@@ -297,7 +305,7 @@ func (c *Config) injectTypesFromSchema() error {
 
 			if ma := bd.Arguments.ForName("models"); ma != nil {
 				if mvs, err := ma.Value.Value(nil); err == nil {
-					for _, mv := range mvs.([]interface{}) {
+					for _, mv := range mvs.([]any) {
 						c.Models.Add(schemaType.Name, mv.(string))
 					}
 				}
@@ -342,6 +350,83 @@ func (c *Config) injectTypesFromSchema() error {
 					}
 				}
 			}
+
+			if efds := schemaType.Directives.ForNames("goExtraField"); len(efds) != 0 {
+				for _, efd := range efds {
+					if t := efd.Arguments.ForName("type"); t != nil {
+						extraField := ModelExtraField{}
+
+						if tv, err := t.Value.Value(nil); err == nil {
+							extraField.Type = tv.(string)
+						}
+
+						if extraField.Type == "" {
+							return fmt.Errorf(
+								"argument 'type' for directive @goExtraField (src: %s, line: %d) cannot by empty",
+								efd.Position.Src.Name,
+								efd.Position.Line,
+							)
+						}
+
+						if ot := efd.Arguments.ForName("overrideTags"); ot != nil {
+							if otv, err := ot.Value.Value(nil); err == nil {
+								extraField.OverrideTags = otv.(string)
+							}
+						}
+
+						if d := efd.Arguments.ForName("description"); d != nil {
+							if dv, err := d.Value.Value(nil); err == nil {
+								extraField.Description = dv.(string)
+							}
+						}
+
+						extraFieldName := ""
+						if fn := efd.Arguments.ForName("name"); fn != nil {
+							if fnv, err := fn.Value.Value(nil); err == nil {
+								extraFieldName = fnv.(string)
+							}
+						}
+
+						if extraFieldName == "" {
+							// Embeddable fields
+							typeMapEntry := c.Models[schemaType.Name]
+							typeMapEntry.EmbedExtraFields = append(typeMapEntry.EmbedExtraFields, extraField)
+							c.Models[schemaType.Name] = typeMapEntry
+						} else {
+							// Regular fields
+							typeMapEntry := c.Models[schemaType.Name]
+							if typeMapEntry.ExtraFields == nil {
+								typeMapEntry.ExtraFields = make(map[string]ModelExtraField)
+							}
+
+							c.Models[schemaType.Name] = typeMapEntry
+							c.Models[schemaType.Name].ExtraFields[extraFieldName] = extraField
+						}
+					}
+				}
+			}
+		}
+
+		if schemaType.Kind == ast.Enum && !strings.HasPrefix(schemaType.Name, "__") {
+			values := make(map[string]EnumValue)
+
+			for _, value := range schemaType.EnumValues {
+				if directive := value.Directives.ForName("goEnum"); directive != nil {
+					if arg := directive.Arguments.ForName("value"); arg != nil {
+						if v, err := arg.Value.Value(nil); err == nil {
+							values[value.Name] = EnumValue{
+								Value: v.(string),
+							}
+						}
+					}
+				}
+			}
+
+			if len(values) > 0 {
+				model := c.Models[schemaType.Name]
+				model.EnumValues = values
+				c.Models[schemaType.Name] = model
+			}
 		}
 	}
 
@@ -352,15 +437,21 @@ type TypeMapEntry struct {
 	Model         StringList              `yaml:"model,omitempty"`
 	ForceGenerate bool                    `yaml:"forceGenerate,omitempty"`
 	Fields        map[string]TypeMapField `yaml:"fields,omitempty"`
+	EnumValues    map[string]EnumValue    `yaml:"enum_values,omitempty"`
 
 	// Key is the Go name of the field.
-	ExtraFields map[string]ModelExtraField `yaml:"extraFields,omitempty"`
+	ExtraFields      map[string]ModelExtraField `yaml:"extraFields,omitempty"`
+	EmbedExtraFields []ModelExtraField          `yaml:"embedExtraFields,omitempty"`
 }
 
 type TypeMapField struct {
 	Resolver        bool   `yaml:"resolver"`
 	FieldName       string `yaml:"fieldName"`
 	GeneratedMethod string `yaml:"-"`
+}
+
+type EnumValue struct {
+	Value string
 }
 
 type ModelExtraField struct {
@@ -391,7 +482,7 @@ type ModelExtraField struct {
 
 type StringList []string
 
-func (a *StringList) UnmarshalYAML(unmarshal func(interface{}) error) error {
+func (a *StringList) UnmarshalYAML(unmarshal func(any) error) error {
 	var single string
 	err := unmarshal(&single)
 	if err == nil {
@@ -516,6 +607,14 @@ func (tm TypeMap) Check() error {
 		for _, model := range entry.Model {
 			if strings.LastIndex(model, ".") < strings.LastIndex(model, "/") {
 				return fmt.Errorf("model %s: invalid type specifier \"%s\" - you need to specify a struct to map to", typeName, entry.Model)
+			}
+		}
+
+		if len(entry.Model) == 0 {
+			for enum, v := range entry.EnumValues {
+				if v.Value != "" {
+					return fmt.Errorf("model is empty for: %v, but enum value is specified for %v", typeName, enum)
+				}
 			}
 		}
 	}

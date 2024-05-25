@@ -1,11 +1,26 @@
 run:
   tests: true
-  skip-dirs:
-    - bin
 
 linters-settings:
   errcheck:
-    ignore: fmt:.*,[rR]ead|[wW]rite|[cC]lose,io:Copy
+    exclude-functions:
+      - (io.Writer).Write
+      - io.Copy
+      - io.WriteString
+  revive:
+    enable-all-rules: false
+    rules:
+      - name: empty-lines
+      - name: use-any
+  testifylint:
+    disable-all: true
+    enable:
+      - bool-compare
+      - compares
+      - error-is-as
+      - error-nil
+      - expected-actual
+      - nil-compare
 
 linters:
   disable-all: true
@@ -22,14 +37,26 @@ linters:
     - misspell
     - nakedret
     - prealloc
+    - revive
     - staticcheck
+    - testifylint
     - typecheck
     - unconvert
     - unused
 
 issues:
+  exclude-dirs:
+    - bin
   exclude-rules:
     # Exclude some linters from running on tests files.
     - path: _test\.go
       linters:
         - dupl
+        - errcheck
+    # Disable revive.use-any for backwards compatibility
+    - path: graphql/map.go
+      text: "use-any: since GO 1.18 'interface{}' can be replaced by 'any'"
+    - path: codegen/testserver/followschema/resolver.go
+      text: "use-any: since GO 1.18 'interface{}' can be replaced by 'any'"
+    - path: codegen/testserver/singlefile/resolver.go
+      text: "use-any: since GO 1.18 'interface{}' can be replaced by 'any'"

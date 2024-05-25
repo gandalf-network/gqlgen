@@ -52,7 +52,7 @@ type Options struct {
 	// FileNotice is notice written below the package line
 	FileNotice string
 	// Data will be passed to the template execution.
-	Data  interface{}
+	Data  any
 	Funcs template.FuncMap
 
 	// Packages cache, you can find me on config.Config
@@ -201,6 +201,7 @@ func Funcs() template.FuncMap {
 		"rawQuote":           rawQuote,
 		"dump":               Dump,
 		"ref":                ref,
+		"obj":                obj,
 		"ts":                 TypeIdentifier,
 		"call":               Call,
 		"prefixLines":        prefixLines,
@@ -214,7 +215,7 @@ func Funcs() template.FuncMap {
 		"add": func(a, b int) int {
 			return a + b
 		},
-		"render": func(filename string, tpldata interface{}) (*bytes.Buffer, error) {
+		"render": func(filename string, tpldata any) (*bytes.Buffer, error) {
 			return render(resolveName(filename, 0), tpldata)
 		},
 	}
@@ -245,6 +246,15 @@ func isDelimiter(c rune) bool {
 
 func ref(p types.Type) string {
 	return CurrentImports.LookupType(p)
+}
+
+func obj(obj types.Object) string {
+	pkg := CurrentImports.Lookup(obj.Pkg().Path())
+	if pkg != "" {
+		pkg += "."
+	}
+
+	return pkg + obj.Name()
 }
 
 func Call(p *types.Func) string {
@@ -557,7 +567,7 @@ func rawQuote(s string) string {
 	return "`" + strings.ReplaceAll(s, "`", "`+\"`\"+`") + "`"
 }
 
-func notNil(field string, data interface{}) bool {
+func notNil(field string, data any) bool {
 	v := reflect.ValueOf(data)
 
 	if v.Kind() == reflect.Ptr {
@@ -571,7 +581,7 @@ func notNil(field string, data interface{}) bool {
 	return val.IsValid() && !val.IsNil()
 }
 
-func Dump(val interface{}) string {
+func Dump(val any) string {
 	switch val := val.(type) {
 	case int:
 		return strconv.Itoa(val)
@@ -585,13 +595,13 @@ func Dump(val interface{}) string {
 		return strconv.FormatBool(val)
 	case nil:
 		return "nil"
-	case []interface{}:
+	case []any:
 		var parts []string
 		for _, part := range val {
 			parts = append(parts, Dump(part))
 		}
 		return "[]interface{}{" + strings.Join(parts, ",") + "}"
-	case map[string]interface{}:
+	case map[string]any:
 		buf := bytes.Buffer{}
 		buf.WriteString("map[string]interface{}{")
 		var keys []string
@@ -631,7 +641,7 @@ func resolveName(name string, skip int) string {
 	return filepath.Join(filepath.Dir(callerFile), name)
 }
 
-func render(filename string, tpldata interface{}) (*bytes.Buffer, error) {
+func render(filename string, tpldata any) (*bytes.Buffer, error) {
 	t := template.New("").Funcs(Funcs())
 
 	b, err := os.ReadFile(filename)
