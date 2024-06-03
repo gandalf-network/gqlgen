@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/base64"
 	"encoding/json"
-	"fmt"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -59,7 +58,7 @@ func TestApolloTracing(t *testing.T) {
 	require.Less(t, ftv1.StartTime.Nanos, ftv1.EndTime.Nanos)
 	require.EqualValues(t, ftv1.EndTime.Nanos-ftv1.StartTime.Nanos, ftv1.DurationNs)
 
-	fmt.Printf("%#v\n", resp.Body.String())
+	t.Logf("%#v\n", resp.Body.String())
 	require.Equal(t, "Query", ftv1.Root.Child[0].ParentType)
 	require.Equal(t, "name", ftv1.Root.Child[0].GetResponseName())
 	require.Equal(t, "String!", ftv1.Root.Child[0].Type)
@@ -78,16 +77,23 @@ func TestApolloTracing_Concurrent(t *testing.T) {
 					FTV1 string `json:"ftv1"`
 				} `json:"extensions"`
 			}
-			require.NoError(t, json.Unmarshal(resp.Body.Bytes(), &respData))
+
+			err := json.Unmarshal(resp.Body.Bytes(), &respData)
+			if !assert.NoError(t, err) {
+				return
+			}
 
 			tracing := respData.Extensions.FTV1
 			pbuf, err := base64.StdEncoding.DecodeString(tracing)
-			require.NoError(t, err)
+			if !assert.NoError(t, err) {
+				return
+			}
 
 			ftv1 := &generated.Trace{}
 			err = proto.Unmarshal(pbuf, ftv1)
-			require.NoError(t, err)
-			require.NotZero(t, ftv1.StartTime.Nanos)
+			if assert.NoError(t, err) {
+				assert.NotZero(t, ftv1.StartTime.Nanos)
+			}
 		}()
 	}
 }

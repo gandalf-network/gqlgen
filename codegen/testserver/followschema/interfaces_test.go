@@ -2,7 +2,7 @@ package followschema
 
 import (
 	"context"
-	"fmt"
+	"errors"
 	"reflect"
 	"testing"
 
@@ -81,7 +81,8 @@ func TestInterfaces(t *testing.T) {
 	t.Run("interfaces can be typed nil", func(t *testing.T) {
 		resolvers := &Stub{}
 		resolvers.QueryResolver.NoShapeTypedNil = func(ctx context.Context) (shapes Shape, e error) {
-			panic("should not be called")
+			t.Fatal("should not be called")
+			return
 		}
 
 		srv := handler.NewDefaultServer(
@@ -105,7 +106,8 @@ func TestInterfaces(t *testing.T) {
 	t.Run("interfaces can be nil (test with code-generated resolver)", func(t *testing.T) {
 		resolvers := &Stub{}
 		resolvers.QueryResolver.Animal = func(ctx context.Context) (animal Animal, e error) {
-			panic("should not be called")
+			t.Fatal("should not be called")
+			return
 		}
 
 		srv := handler.NewDefaultServer(
@@ -161,7 +163,7 @@ func TestInterfaces(t *testing.T) {
 		resolvers.QueryResolver.NotAnInterface = func(ctx context.Context) (byInterface BackedByInterface, err error) {
 			return &BackedByInterfaceImpl{
 				Value: "A",
-				Error: fmt.Errorf("boom"),
+				Error: errors.New("boom"),
 			}, nil
 		}
 
@@ -248,11 +250,11 @@ func TestInterfaces(t *testing.T) {
 			}
 		`, &resp)
 
-		require.Equal(t, 2, len(resp.Shapes))
-		require.Equal(t, float64(-1), resp.Shapes[0].Coordinates.X)
-		require.Equal(t, float64(0), resp.Shapes[0].Coordinates.Y)
-		require.Equal(t, float64(1), resp.Shapes[1].Coordinates.X)
-		require.Equal(t, float64(1), resp.Shapes[1].Coordinates.Y)
+		require.Len(t, resp.Shapes, 2)
+		require.InDelta(t, float64(-1), resp.Shapes[0].Coordinates.X, 0.02)
+		require.InDelta(t, float64(0), resp.Shapes[0].Coordinates.Y, 0.02)
+		require.InDelta(t, float64(1), resp.Shapes[1].Coordinates.X, 0.02)
+		require.InDelta(t, float64(1), resp.Shapes[1].Coordinates.Y, 0.02)
 	})
 
 	t.Run("fragment on interface must return merged fields", func(t *testing.T) {

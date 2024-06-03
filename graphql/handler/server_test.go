@@ -2,7 +2,7 @@ package handler_test
 
 import (
 	"context"
-	"fmt"
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -107,8 +107,8 @@ func TestServer(t *testing.T) {
 
 		resp := get(srv, "/foo?query=invalid")
 		assert.Equal(t, http.StatusUnprocessableEntity, resp.Code, resp.Body.String())
-		assert.Equal(t, 1, len(errors1))
-		assert.Equal(t, 1, len(errors2))
+		assert.Len(t, errors1, 1)
+		assert.Len(t, errors2, 1)
 	})
 
 	t.Run("query caching", func(t *testing.T) {
@@ -159,8 +159,8 @@ func TestErrorServer(t *testing.T) {
 
 		resp := get(srv, "/foo?query={name}")
 		assert.Equal(t, http.StatusOK, resp.Code, resp.Body.String())
-		assert.Equal(t, 1, len(errors1))
-		assert.Equal(t, 1, len(errors2))
+		assert.Len(t, errors1, 1)
+		assert.Len(t, errors2, 1)
 	})
 }
 
@@ -171,7 +171,7 @@ func (t panicTransport) Supports(r *http.Request) bool {
 }
 
 func (t panicTransport) Do(w http.ResponseWriter, r *http.Request, exec graphql.GraphExecutor) {
-	panic(fmt.Errorf("panic in transport"))
+	panic(errors.New("panic in transport"))
 }
 
 func TestRecover(t *testing.T) {
@@ -186,7 +186,7 @@ func TestRecover(t *testing.T) {
 }
 
 func get(handler http.Handler, target string) *httptest.ResponseRecorder {
-	r := httptest.NewRequest("GET", target, nil)
+	r := httptest.NewRequest("GET", target, http.NoBody)
 	w := httptest.NewRecorder()
 
 	handler.ServeHTTP(w, r)
@@ -194,7 +194,7 @@ func get(handler http.Handler, target string) *httptest.ResponseRecorder {
 }
 
 func post(handler http.Handler, target, contentType string) *httptest.ResponseRecorder {
-	r := httptest.NewRequest("POST", target, nil)
+	r := httptest.NewRequest("POST", target, http.NoBody)
 	r.Header.Set("Content-Type", contentType)
 	w := httptest.NewRecorder()
 

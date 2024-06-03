@@ -2,6 +2,7 @@ package config
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"go/types"
 	"io"
@@ -40,6 +41,7 @@ type Config struct {
 	OmitGQLGenVersionInFileNotice bool                       `yaml:"omit_gqlgen_version_in_file_notice,omitempty"`
 	OmitRootModels                bool                       `yaml:"omit_root_models,omitempty"`
 	OmitResolverFields            bool                       `yaml:"omit_resolver_fields,omitempty"`
+	OmitPanicHandler              bool                       `yaml:"omit_panic_handler,omitempty"`
 	StructFieldsAlwaysPointers    bool                       `yaml:"struct_fields_always_pointers,omitempty"`
 	ReturnPointersInUmarshalInput bool                       `yaml:"return_pointers_in_unmarshalinput,omitempty"`
 	ResolversAlwaysReturnPointers bool                       `yaml:"resolvers_always_return_pointers,omitempty"`
@@ -564,11 +566,11 @@ func (c *Config) check() error {
 			Declaree: "federation",
 		})
 		if c.Federation.ImportPath() != c.Exec.ImportPath() {
-			return fmt.Errorf("federation and exec must be in the same package")
+			return errors.New("federation and exec must be in the same package")
 		}
 	}
 	if c.Federated {
-		return fmt.Errorf("federated has been removed, instead use\nfederation:\n    filename: path/to/federated.go")
+		return errors.New("federated has been removed, instead use\nfederation:\n    filename: path/to/federated.go")
 	}
 
 	for importPath, pkg := range fileList {
@@ -643,7 +645,7 @@ func (tm TypeMap) ReferencedPackages() []string {
 	return pkgs
 }
 
-func (tm TypeMap) Add(name string, goType string) {
+func (tm TypeMap) Add(name, goType string) {
 	modelCfg := tm[name]
 	modelCfg.Model = append(modelCfg.Model, goType)
 	tm[name] = modelCfg

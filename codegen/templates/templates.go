@@ -2,6 +2,7 @@ package templates
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"go/types"
 	"io/fs"
@@ -71,7 +72,7 @@ var (
 // files inside the directory where you wrote the plugin.
 func Render(cfg Options) error {
 	if CurrentImports != nil {
-		panic(fmt.Errorf("recursive or concurrent call to RenderToFile detected"))
+		panic(errors.New("recursive or concurrent call to RenderToFile detected"))
 	}
 	CurrentImports = &Imports{packages: cfg.Packages, destDir: filepath.Dir(cfg.Filename)}
 
@@ -184,7 +185,7 @@ func parseTemplates(cfg Options, t *template.Template) (*template.Template, erro
 	return t, nil
 }
 
-func center(width int, pad string, s string) string {
+func center(width int, pad, s string) string {
 	if len(s)+2 > width {
 		return s
 	}
@@ -206,6 +207,7 @@ func Funcs() template.FuncMap {
 		"call":               Call,
 		"prefixLines":        prefixLines,
 		"notNil":             notNil,
+		"strSplit":           StrSplit,
 		"reserveImport":      CurrentImports.Reserve,
 		"lookupImport":       CurrentImports.Lookup,
 		"go":                 ToGo,
@@ -581,12 +583,16 @@ func notNil(field string, data any) bool {
 	return val.IsValid() && !val.IsNil()
 }
 
+func StrSplit(s, sep string) []string {
+	return strings.Split(s, sep)
+}
+
 func Dump(val any) string {
 	switch val := val.(type) {
 	case int:
 		return strconv.Itoa(val)
 	case int64:
-		return fmt.Sprintf("%d", val)
+		return strconv.FormatInt(val, 10)
 	case float64:
 		return fmt.Sprintf("%f", val)
 	case string:

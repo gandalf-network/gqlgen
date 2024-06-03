@@ -46,7 +46,7 @@ func TestWithEntities(t *testing.T) {
 	require.Equal(t, "String", f.Entities[1].Resolvers[0].KeyFields[0].Definition.Type.Name())
 
 	require.Equal(t, "MoreNesting", f.Entities[2].Name)
-	require.Len(t, f.Entities[2].Resolvers, 0)
+	require.Empty(t, f.Entities[2].Resolvers)
 
 	require.Equal(t, "MultiHelloMultiKey", f.Entities[3].Name)
 	require.Len(t, f.Entities[3].Resolvers, 2)
@@ -98,7 +98,7 @@ func TestNoEntities(t *testing.T) {
 
 	err := f.MutateConfig(cfg)
 	require.NoError(t, err)
-	require.Len(t, f.Entities, 0)
+	require.Empty(t, f.Entities)
 }
 
 func TestUnusedInterfaceKeyDirective(t *testing.T) {
@@ -106,7 +106,7 @@ func TestUnusedInterfaceKeyDirective(t *testing.T) {
 
 	err := f.MutateConfig(cfg)
 	require.NoError(t, err)
-	require.Len(t, f.Entities, 0)
+	require.Empty(t, f.Entities)
 }
 
 func TestInterfaceKeyDirective(t *testing.T) {
@@ -143,9 +143,7 @@ func TestCodeGeneration(t *testing.T) {
 	require.NoError(t, f.MutateConfig(cfg))
 
 	data, err := codegen.BuildData(cfg)
-	if err != nil {
-		panic(err)
-	}
+	require.NoError(t, err)
 	require.NoError(t, f.GenerateCode(data))
 }
 
@@ -162,9 +160,7 @@ func TestCodeGenerationFederation2(t *testing.T) {
 	require.Empty(t, f.Entities[2].Resolvers)
 
 	data, err := codegen.BuildData(cfg)
-	if err != nil {
-		panic(err)
-	}
+	require.NoError(t, err)
 	require.NoError(t, f.GenerateCode(data))
 }
 
@@ -213,7 +209,7 @@ func TestMultiWithOmitSliceElemPointersCfg(t *testing.T) {
 
 func TestHandlesRequiresArgumentCorrectlyIfNoSpace(t *testing.T) {
 	requiresFieldSet := fieldset.New("foo bar baz(limit:4)", nil)
-	assert.Equal(t, 3, len(requiresFieldSet))
+	assert.Len(t, requiresFieldSet, 3)
 	assert.Equal(t, "Foo", requiresFieldSet[0].ToGo())
 	assert.Equal(t, "Bar", requiresFieldSet[1].ToGo())
 	assert.Equal(t, "Baz(limit:4)", requiresFieldSet[2].ToGo())
